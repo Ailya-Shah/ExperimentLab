@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExperimentLab — Results</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="index.html">Experiment<span>Lab</span></a>
+    <nav class="nav-links">
+      <a href="index.html">Experiments</a>
+      <a href="create.html" class="cta">+ New experiment</a>
+    </nav>
+  </header>
+
+  <div id="rhead"></div>
+  <div id="panel" aria-live="polite"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const id = +new URLSearchParams(location.search).get("id");
+const headEl = document.getElementById("rhead");
+const panelEl = document.getElementById("panel");
+let status = null;
+
+async function load() {
+  if (!id) { panelEl.innerHTML = `<div class="note err">No experiment id in the URL.</div>`; return; }
+
+  let exp;
+  try {
+    const r = await api("GET", `/api/experiments/${id}`);
+    if (r.status === 404) { headEl.innerHTML = ""; panelEl.innerHTML = `<div class="note">Experiment not found.</div>`; return; }
+    exp = await r.json();
+  } catch { panelEl.innerHTML = `<div class="note err">Couldn't reach the API.</div>`; return; }
+
+  status = exp.status;
+  renderHead(exp);
+  renderResults();
+}
+
+function renderHead(exp) {
+  const life = exp.status === "running"
+    ? `<button class="btn" data-act="stop">Stop</button>`
+    : `<button class="btn primary" data-act="start">Start</button>`;
+  headEl.innerHTML = `
+    <div class="exp-head">
+      <div class="status-row">
+        <span class="exp-name">${esc(exp.name)}</span>
+        ${badge(exp.status)}
+      </div>
+      <div class="actions">
+        ${life}
+        ${exp.status === "running" ? `<button class="btn" data-act="sim">Run 5,000 users</button>` : ""}
+        <button class="btn" data-act="refresh">Refresh</button>
+        <a class="btn ghost" href="index.html">All experiments</a>
+      </div>
+    </div>`;
+}
+
+async function renderResults() {
+  panelEl.innerHTML = `<div class="note">Loading…</div>`;
+  let res;
+  try { res = await api("GET", `/api/experiments/${id}/results`); }
+  catch { panelEl.innerHTML = `<div class="note err">Couldn't reach the API.</div>`; return; }
+
+  if (res.status === 400) { panelEl.innerHTML = `<div class="note"><strong>${esc(await res.text())}</strong></div>`; return; }
+  if (!res.ok) { panelEl.innerHTML = `<div class="note">Couldn't load results.</div>`; return; }
+
+  const d = await res.json();
+  if (d.message) {
+    const hint = status === "running"
+      ? "Collect some traffic to see results."
+      : "Start the experiment, then collect traffic to see results.";
+    panelEl.innerHTML = `<div class="note"><strong>${esc(d.message)}</strong><br><span class="muted">${hint}</span></div>`;
+    return;
+  }
+  renderAnalysis(d);
+}
+
+function armCard(name, a, isWinner, isControl, domainMax) {
+  const tag = isWinner ? '<span class="tag win">WINNER</span>'
+            : (isControl ? '<span class="tag ctrl">CONTROL</span>' : "");
+  return `<div class="arm ${isWinner ? "winner" : ""}">
+    <div class="arm-top"><span class="arm-name">${esc(name)}</span>${tag}</div>
+    <div class="rate">${pct(a.rate)}</div>
+    <div class="track"><div class="fill" style="width:${(a.rate / domainMax * 100).toFixed(1)}%"></div></div>
+    <div class="counts">${a.conversions.toLocaleString()} / ${a.exposures.toLocaleString()} converted</div>
+  </div>`;
+}
+
+function comparisonBlock(d, c, showTitle) {
+  const ctrl = d.control;
+  const title = showTitle ? `<div class="cmp-title">${esc(ctrl.name)} vs ${esc(c.variant)}</div>` : "";
+  if (c.message) return `<div class="cmp">${title}<div class="note">${esc(c.message)}</div></div>`;
+
+  const ctrlWins = ctrl.rate > c.rate, armWins = c.rate > ctrl.rate;
+  const domainMax = Math.max(ctrl.rate, c.rate) * 1.25 || 1;
+  const v = c.decision.verdict;
+  const p = c.pValue < 0.001 ? "< 0.001" : c.pValue.toFixed(4);
+
+  return `<div class="cmp">${title}
+    <div class="verdict ${v.toLowerCase()}">
+      <div class="word">${VERDICT[v] || esc(v)}</div>
+      <div class="reason">${esc(c.decision.reason)}</div>
+    </div>
+    <div class="arena">
+      ${armCard(ctrl.name, ctrl, ctrlWins, true, domainMax)}
+      ${armCard(c.variant, c, armWins, false, domainMax)}
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Relative lift</div><div class="v ${c.relativeLift > 0 ? "pos" : ""}">${signed(c.relativeLift)}</div></div>
+      <div class="stat"><div class="k">p-value</div><div class="v">${p}</div></div>
+      <div class="stat"><div class="k">95% CI (lift)</div><div class="v">${signed(c.confidenceInterval95.lower)} … ${signed(c.confidenceInterval95.upper)}</div></div>
+      <div class="stat"><div class="k">z-score</div><div class="v">${c.zScore.toFixed(2)}</div></div>
+    </div>
+  </div>`;
+}
+
+function renderAnalysis(d) {
+  const multi = d.comparisons.length > 1;
+  panelEl.innerHTML = d.comparisons.map(c => comparisonBlock(d, c, multi)).join("");
+}
+
+headEl.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === "refresh") return load();
+
+  if (act === "sim") {
+    b.disabled = true;
+    try {
+      const r = await api("POST", `/api/experiments/${id}/simulate?users=5000`);
+      if (!r.ok) { toast(await r.text(), "error"); b.disabled = false; return; }
+    } catch { toast("Couldn't reach the API.", "error"); b.disabled = false; return; }
+    toast("Generated 5,000 users.", "success");
+    return load();
+  }
+
+  // start / stop
+  try {
+    const r = await api("POST", `/api/experiments/${id}/${act}`);
+    if (!r.ok) return toast(await r.text(), "error");
+  } catch { return toast("Couldn't reach the API.", "error"); }
+  toast(`Experiment ${act === "start" ? "started" : "stopped"}.`, "success");
+  load();
+});
+
+load();
+</script>
+</body>
+</html>

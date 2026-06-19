@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExperimentLab — New experiment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="index.html">Experiment<span>Lab</span></a>
+    <nav class="nav-links">
+      <a href="index.html">Experiments</a>
+      <a href="create.html" class="cta active">+ New experiment</a>
+    </nav>
+  </header>
+
+  <div class="page-head"><h1>New experiment</h1></div>
+  <p class="sub">Define the variants and how traffic splits between them. One variant is the control — the baseline everything else is measured against.</p>
+
+  <form id="createForm" class="form-card" novalidate>
+    <div class="field">
+      <label for="expName">Name <span class="req">*</span></label>
+      <input type="text" id="expName" maxlength="200" placeholder="e.g. Signup button colour" value="">
+    </div>
+
+    <div class="field">
+      <label for="expDesc">Description</label>
+      <textarea id="expDesc" maxlength="1000" placeholder="What are you testing, and why?"></textarea>
+    </div>
+
+    <div class="field">
+      <div class="vhead">
+        <span class="lbl">Variants</span>
+        <button type="button" class="linkbtn" id="splitEven">Split evenly</button>
+      </div>
+      <div id="vrows"></div>
+      <div class="row-tools">
+        <button type="button" class="btn ghost" id="addVariant">+ Add variant</button>
+      </div>
+      <div class="hint">Pick exactly one control. Traffic across all variants must total 100%.</div>
+      <div id="sumbar" class="sumbar"></div>
+    </div>
+
+    <div id="formErrors" class="form-errors"></div>
+
+    <div class="form-foot">
+      <button type="submit" id="submitBtn" class="btn primary">Create experiment</button>
+      <a class="btn ghost" href="index.html">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script src="app.js"></script>
+<script>
+const nameEl = document.getElementById("expName");
+const descEl = document.getElementById("expDesc");
+const rowsEl = document.getElementById("vrows");
+const sumEl  = document.getElementById("sumbar");
+const errEl  = document.getElementById("formErrors");
+const submitEl = document.getElementById("submitBtn");
+
+// Sensible defaults so a non-technical user can just hit Create.
+let variants = [
+  { name: "control",   pct: 50, control: true },
+  { name: "treatment", pct: 50, control: false },
+];
+
+function renderRows() {
+  rowsEl.innerHTML = variants.map((v, i) => `
+    <div class="vrow">
+      <input class="vname" data-i="${i}" type="text" maxlength="100" placeholder="Variant name" value="${esc(v.name)}">
+      <input class="vpct"  data-i="${i}" type="number" min="0" max="100" step="1" value="${v.pct}">
+      <label class="vctrl"><input type="radio" name="ctrl" data-i="${i}" ${v.control ? "checked" : ""}> control</label>
+      <button type="button" class="btn ghost vremove" data-i="${i}" ${variants.length <= 2 ? "disabled" : ""} title="Remove variant">✕</button>
+    </div>`).join("");
+  validate();
+}
+
+rowsEl.addEventListener("input", (e) => {
+  const i = +e.target.dataset.i;
+  if (e.target.classList.contains("vname")) variants[i].name = e.target.value;
+  else if (e.target.classList.contains("vpct")) variants[i].pct = e.target.value === "" ? 0 : +e.target.value;
+  validate();
+});
+rowsEl.addEventListener("change", (e) => {
+  if (e.target.name === "ctrl") {
+    const i = +e.target.dataset.i;
+    variants.forEach((v, j) => v.control = (j === i));
+  }
+  validate();
+});
+rowsEl.addEventListener("click", (e) => {
+  const rm = e.target.closest(".vremove");
+  if (rm && !rm.disabled) {
+    const i = +rm.dataset.i;
+    const wasControl = variants[i].control;
+    variants.splice(i, 1);
+    if (wasControl && !variants.some(v => v.control)) variants[0].control = true; // never lose the control
+    renderRows();
+  }
+});
+
+document.getElementById("addVariant").addEventListener("click", () => {
+  variants.push({ name: "", pct: 0, control: false });
+  renderRows();
+});
+document.getElementById("splitEven").addEventListener("click", () => {
+  const n = variants.length, base = Math.floor(100 / n);
+  variants.forEach(v => v.pct = base);
+  variants[0].pct += 100 - base * n;   // remainder to the first variant
+  renderRows();
+});
+nameEl.addEventListener("input", validate);
+
+function validate() {
+  const sum = variants.reduce((a, v) => a + (Number(v.pct) || 0), 0);
+  const sumOk = Math.abs(sum - 100) < 0.01;
+  sumEl.className = "sumbar " + (sumOk ? "sum-ok" : "sum-bad");
+  sumEl.textContent = sumOk ? "Traffic totals 100% ✓" : `Traffic totals ${sum}% — must equal 100%`;
+
+  const errs = [];
+  if (!nameEl.value.trim()) errs.push("Give the experiment a name.");
+  if (variants.length < 2) errs.push("Add at least two variants.");
+  if (variants.some(v => !v.name.trim())) errs.push("Every variant needs a name.");
+  const names = variants.map(v => v.name.trim().toLowerCase());
+  if (new Set(names).size !== names.length) errs.push("Variant names must be unique.");
+  if (!sumOk) errs.push("Variant traffic must total 100%.");
+  if (variants.filter(v => v.control).length !== 1) errs.push("Mark exactly one variant as the control.");
+
+  errEl.innerHTML = errs.map(e => `<div>• ${esc(e)}</div>`).join("");
+  submitEl.disabled = errs.length > 0;
+  return errs.length === 0;
+}
+
+document.getElementById("createForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  if (!validate()) return;
+  submitEl.disabled = true;
+
+  const body = {
+    name: nameEl.value.trim(),
+    description: descEl.value.trim() || null,
+    variants: variants.map(v => ({
+      name: v.name.trim(),
+      trafficPercentage: Number(v.pct),
+      isControl: !!v.control,
+    })),
+  };
+
+  let res;
+  try { res = await api("POST", "/api/experiments", body); }
+  catch { toast("Couldn't reach the API.", "error"); submitEl.disabled = false; return; }
+  if (!res.ok) { toast(await res.text(), "error"); submitEl.disabled = false; return; }
+
+  const created = await res.json();
+  toast("Experiment created.", "success");
+  location.href = `results.html?id=${created.id}`;
+});
+
+renderRows();
+</script>
+</body>
+</html>
