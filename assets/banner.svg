@@ -1,0 +1,23 @@
+<svg width="900" height="240" viewBox="0 0 900 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ExperimentLab — A/B testing and experimentation platform">
+  <rect width="900" height="240" rx="20" fill="#131620"/>
+  <rect x="0" y="0" width="900" height="4" rx="2" fill="#8B87FF"/>
+
+  <text x="56" y="66" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="3.5" fill="#7C8CF8">A / B  TESTING  PLATFORM</text>
+
+  <text x="55" y="130" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="54" font-weight="800" letter-spacing="-1.2">
+    <tspan fill="#F4F6FB">Experiment</tspan><tspan fill="#8B87FF">Lab</tspan>
+  </text>
+
+  <text x="57" y="168" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="400" fill="#9AA3B2">Run experiments, measure lift, and ship with statistical confidence.</text>
+
+  <text x="57" y="208" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="500" letter-spacing="0.3" fill="#5E6675">.NET 8&#160;&#160;·&#160;&#160;EF Core&#160;&#160;·&#160;&#160;SQLite&#160;&#160;·&#160;&#160;Vanilla JS</text>
+
+  <rect x="748" y="46" width="96" height="26" rx="13" fill="#2A2750"/>
+  <text x="796" y="64" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#B7B4FF">+42% lift</text>
+
+  <line x1="708" y1="190.5" x2="856" y2="190.5" stroke="#2B3040" stroke-width="1"/>
+  <rect x="722" y="130" width="46" height="60" rx="6" fill="#353B4A"/>
+  <rect x="794" y="84" width="46" height="106" rx="6" fill="#8B87FF"/>
+  <text x="745" y="212" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#6B7280">A</text>
+  <text x="817" y="212" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#8B87FF">B</text>
+</svg>

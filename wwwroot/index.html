@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExperimentLab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --ink: #15171C;
+    --muted: #6B7280;
+    --faint: #9AA1AD;
+    --line: #E5E8EC;
+    --track: #EEF0F3;
+    --accent: #4F46E5;
+    --ship: #0B8F63;     --ship-bg: #E4F5EE;
+    --hold: #2563EB;     --hold-bg: #E7EEFC;
+    --run:  #B26A00;     --run-bg:  #FBF0DE;
+    --flat: #5B6270;     --flat-bg: #ECEEF1;
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--body); background: var(--bg); color: var(--ink);
+    line-height: 1.5; -webkit-font-smoothing: antialiased; padding: 0 20px 64px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; padding: 28px 0 24px; border-bottom: 1px solid var(--line);
+  }
+  .brand { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+  .brand span { color: var(--accent); }
+  select {
+    font-family: var(--body); font-size: 14px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 12px; min-width: 220px; cursor: pointer;
+  }
+  select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .exp-head { margin: 28px 0 18px; }
+  .exp-name { font-family: var(--display); font-weight: 600; font-size: 24px; letter-spacing: -0.02em; }
+
+  .cmp + .cmp { margin-top: 30px; padding-top: 30px; border-top: 1px solid var(--line); }
+  .cmp-title {
+    font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 14px;
+  }
+
+  .verdict {
+    border-radius: 16px; padding: 22px 24px; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 22px;
+    border: 1px solid var(--line); background: var(--surface);
+  }
+  .verdict .word {
+    font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1;
+    letter-spacing: -0.02em; white-space: nowrap;
+  }
+  .verdict .reason { font-size: 15px; color: var(--ink); }
+  .verdict.ship { background: var(--ship-bg); border-color: #BFE7D6; }
+  .verdict.ship .word { color: var(--ship); }
+  .verdict.hold { background: var(--hold-bg); border-color: #C7D8FA; }
+  .verdict.hold .word { color: var(--hold); }
+  .verdict.keep_running { background: var(--run-bg); border-color: #F0DCB4; }
+  .verdict.keep_running .word { color: var(--run); }
+  .verdict.no_difference { background: var(--flat-bg); border-color: var(--line); }
+  .verdict.no_difference .word { color: var(--flat); }
+
+  .arena { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .arm { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .arm.winner { border-color: #BFE7D6; box-shadow: 0 0 0 1px #BFE7D6 inset; }
+  .arm-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; }
+  .arm-name {
+    font-family: var(--mono); font-size: 12px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .arm.winner .arm-name { color: var(--ship); }
+  .tag {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+  }
+  .tag.win { color: var(--ship); background: var(--ship-bg); }
+  .tag.ctrl { color: var(--muted); background: var(--flat-bg); }
+  .rate { font-family: var(--mono); font-weight: 700; font-size: 34px; letter-spacing: -0.02em; }
+  .track { height: 8px; background: var(--track); border-radius: 999px; margin: 12px 0 10px; overflow: hidden; }
+  .fill { height: 100%; border-radius: 999px; background: var(--faint); width: 0; transition: width .6s cubic-bezier(.2,.7,.3,1); }
+  .arm.winner .fill { background: var(--ship); }
+  .counts { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  }
+  .stat { background: var(--surface); padding: 14px 16px; }
+  .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); margin-bottom: 5px; }
+  .stat .v { font-family: var(--mono); font-weight: 500; font-size: 17px; }
+  .stat .v.pos { color: var(--ship); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+  button {
+    font-family: var(--body); font-size: 14px; font-weight: 500; cursor: pointer;
+    border-radius: 10px; padding: 10px 16px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink); transition: background .15s, border-color .15s;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:hover { border-color: var(--faint); }
+  button.primary:hover { background: #4338CA; border-color: #4338CA; }
+  button:disabled { opacity: .55; cursor: default; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .note {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 28px 24px; text-align: center; color: var(--muted); font-size: 15px;
+  }
+  .note strong { color: var(--ink); font-weight: 600; }
+  .note.small { padding: 16px; text-align: left; }
+  .err { color: #B42318; }
+
+  @media (max-width: 560px) {
+    .arena { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .verdict { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Experiment<span>Lab</span></div>
+    <select id="picker" aria-label="Choose experiment"></select>
+  </header>
+  <div id="panel" aria-live="polite"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const pct = (x) => (x * 100).toFixed(2) + "%";
+const signed = (x) => (x >= 0 ? "+" : "") + (x * 100).toFixed(2) + "%";
+const esc = (s) => String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+const VERDICT = { SHIP: "Ship it", HOLD: "Hold", KEEP_RUNNING: "Keep running", NO_DIFFERENCE: "No winner" };
+
+let currentId = null;
+
+async function loadExperiments() {
+  let list;
+  try { list = await (await fetch("/api/experiments")).json(); }
+  catch { $("panel").innerHTML = `<div class="note err">Couldn't reach the API. Is the app running?</div>`; return; }
+
+  const picker = $("picker");
+  if (!list.length) {
+    picker.innerHTML = "<option>No experiments</option>";
+    $("panel").innerHTML = `<div class="note"><strong>No experiments yet.</strong><br>Create one in Swagger, then it shows up here.</div>`;
+    return;
+  }
+  picker.innerHTML = list.map(e => `<option value="${e.id}">#${e.id} &middot; ${esc(e.name)}</option>`).join("");
+  picker.onchange = () => showResults(+picker.value);
+  showResults(+picker.value);
+}
+
+async function showResults(id) {
+  currentId = id;
+  $("panel").innerHTML = `<div class="note">Loading&hellip;</div>`;
+  let res;
+  try { res = await fetch(`/api/experiments/${id}/results`); }
+  catch { $("panel").innerHTML = `<div class="note err">Couldn't reach the API.</div>`; return; }
+
+  if (res.status === 400) { $("panel").innerHTML = noteState(esc(await res.text())); return; }
+  if (!res.ok) { $("panel").innerHTML = noteState("Experiment not found."); return; }
+
+  const d = await res.json();
+  if (d.message) { $("panel").innerHTML = noteState(esc(d.message)); return; }
+  render(d);
+}
+
+function noteState(msg) {
+  return `<div class="note"><strong>${msg}</strong>
+    <div class="actions" style="justify-content:center;margin-top:16px">
+      <button class="primary" onclick="simulate()">Run 5,000 users</button>
+    </div></div>`;
+}
+
+function armCard(name, a, isWinner, isControl, domainMax) {
+  const tag = isWinner ? '<span class="tag win">WINNER</span>'
+            : (isControl ? '<span class="tag ctrl">CONTROL</span>' : "");
+  return `<div class="arm ${isWinner ? "winner" : ""}">
+    <div class="arm-top"><span class="arm-name">${esc(name)}</span>${tag}</div>
+    <div class="rate">${pct(a.rate)}</div>
+    <div class="track"><div class="fill" style="width:${(a.rate / domainMax * 100).toFixed(1)}%"></div></div>
+    <div class="counts">${a.conversions.toLocaleString()} / ${a.exposures.toLocaleString()} converted</div>
+  </div>`;
+}
+
+function comparisonBlock(d, c, showTitle) {
+  const ctrl = d.control;
+  const title = showTitle ? `<div class="cmp-title">${esc(ctrl.name)} vs ${esc(c.variant)}</div>` : "";
+
+  if (c.message) return `<div class="cmp">${title}<div class="note small">${esc(c.message)}</div></div>`;
+
+  const ctrlWins = ctrl.rate > c.rate;
+  const armWins  = c.rate > ctrl.rate;
+  const domainMax = Math.max(ctrl.rate, c.rate) * 1.25 || 1;
+  const v = c.decision.verdict;
+  const p = c.pValue < 0.001 ? "< 0.001" : c.pValue.toFixed(4);
+
+  return `<div class="cmp">${title}
+    <div class="verdict ${v.toLowerCase()}">
+      <div class="word">${VERDICT[v] || esc(v)}</div>
+      <div class="reason">${esc(c.decision.reason)}</div>
+    </div>
+    <div class="arena">
+      ${armCard(ctrl.name, ctrl, ctrlWins, true, domainMax)}
+      ${armCard(c.variant, c, armWins, false, domainMax)}
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Relative lift</div><div class="v ${c.relativeLift > 0 ? "pos" : ""}">${signed(c.relativeLift)}</div></div>
+      <div class="stat"><div class="k">p-value</div><div class="v">${p}</div></div>
+      <div class="stat"><div class="k">95% CI (lift)</div><div class="v">${signed(c.confidenceInterval95.lower)} &hellip; ${signed(c.confidenceInterval95.upper)}</div></div>
+      <div class="stat"><div class="k">z-score</div><div class="v">${c.zScore.toFixed(2)}</div></div>
+    </div>
+  </div>`;
+}
+
+function render(d) {
+  const multi = d.comparisons.length > 1;
+  const blocks = d.comparisons.map(c => comparisonBlock(d, c, multi)).join("");
+  $("panel").innerHTML = `
+    <div class="exp-head"><span class="exp-name">${esc(d.experimentName)}</span></div>
+    ${blocks}
+    <div class="actions">
+      <button class="primary" onclick="simulate()">Run 5,000 more users</button>
+      <button onclick="showResults(currentId)">Refresh</button>
+    </div>`;
+}
+
+async function simulate() {
+  document.querySelectorAll("button").forEach(b => b.disabled = true);
+  try {
+    const res = await fetch(`/api/experiments/${currentId}/simulate?users=5000`, { method: "POST" });
+    if (!res.ok) alert(await res.text());
+  } catch { alert("Couldn't reach the API."); }
+  showResults(currentId);
+}
+
+loadExperiments();
+</script>
+</body>
+</html>
