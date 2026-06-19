@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/EF%20Core-8-512BD4" alt="EF Core 8">
   <img src="https://img.shields.io/badge/SQLite-bundled-003B57?logo=sqlite&logoColor=white" alt="SQLite">
   <img src="https://img.shields.io/badge/frontend-vanilla%20JS-F7DF1E?logo=javascript&logoColor=black" alt="Vanilla JS">
-  <img src="https://img.shields.io/badge/ships%20as-single%20exe-1A7F37" alt="Single exe">
+  <img src="https://img.shields.io/badge/ships%20as-standalone%20build-1A7F37" alt="Standalone build">
   <img src="https://img.shields.io/badge/license-MIT-111111" alt="MIT">
 </p>
 
@@ -19,6 +19,24 @@
 <p align="center">
   Built by <b>Ailya Shah</b> &middot; Data Science, SEECS
 </p>
+
+---
+
+## Quickest way to run it
+
+No .NET install needed — just run the pre-built app.
+
+1. Go to `bin/Release/net8.0/win-x64/publish/` (or download the published build).
+2. Double-click **`run.bat`**.
+3. Open **http://localhost:5080/** in your browser.
+
+That's it — `experimentlab.db` is created automatically on first launch.
+
+> Don't double-click `ExperimentLab.exe` directly — on this platform, launching the bare
+> exe with no arguments can exit silently with no error. `run.bat` passes a startup
+> argument that avoids this, so always use it instead.
+
+Want to build this yourself from source? See [Run from source](#run-from-source) below.
 
 ---
 
@@ -46,7 +64,7 @@ The data is **real because the platform generates it**, not because it was downl
 - **Decision layer** — turns the raw statistics into a verdict a non-statistician can act on: `SHIP`, `HOLD`, `NO_DIFFERENCE`, or `KEEP_RUNNING`.
 - **Dashboard** — a single-page, framework-free frontend that renders the verdict, a control-vs-arm head-to-head for every variant, and the supporting stats, served by the same app.
 - **Schema migrations** — EF Core migrations track every schema change; the database upgrades in place and existing data is never wiped.
-- **Single-file deployment** — publishes to one self-contained `.exe`. No .NET install required to run it.
+- **Standalone deployment** — publishes as a self-contained build with a one-click launcher. No .NET install required to run it.
 
 ---
 
@@ -63,7 +81,7 @@ A request flows **controller → DbContext → SQLite → DTO → response**; ev
 
 ---
 
-## Quick start (run from source)
+## Run from source
 
 You only need the **.NET 8 SDK**. SQLite needs no install — EF Core bundles it.
 
@@ -82,11 +100,7 @@ dotnet run
 Then open:
 
 - **http://localhost:5080/** — the dashboard
-- **http://localhost:5080/swagger** — the interactive API explorer
-
-### Run the published exe instead
-
-No SDK, no install — see [Single-file deployment](#single-file-deployment) below.
+- **http://localhost:5080/swagger** — the interactive API explorer (Development mode only)
 
 ### See a result in 60 seconds
 
@@ -201,15 +215,24 @@ dotnet ef database update
 
 ---
 
-## Single-file deployment
+## Building the standalone deployment
 
-The project is configured to publish as one self-contained executable — the person running it does not need .NET installed.
+The project publishes as a self-contained folder — no .NET install required on the machine running it.
 
 ```bash
-dotnet publish -c Release
+dotnet publish -c Release -p:PublishSingleFile=false
 ```
 
-The output lands in `bin/Release/net8.0/win-x64/publish/` as a single `ExperimentLab.exe`. Copy that file (plus the `wwwroot` folder next to it) anywhere and run it directly — it starts the server and creates its own `experimentlab.db` on first launch.
+The output lands in `bin/Release/net8.0/win-x64/publish/`. Place a `run.bat` alongside `ExperimentLab.exe` in that folder:
+
+```bat
+@echo off
+ExperimentLab.exe --urls=http://localhost:5080
+```
+
+Use `run.bat` to launch it, not the exe directly — on this platform, launching the bare exe with zero arguments can exit silently with no error or log output; passing any argument avoids it. The app runs in `Production` by default in this build (Swagger is intentionally disabled there — it's a developer tool, not part of the shipped product), creates `experimentlab.db` on first launch, and serves the dashboard at `http://localhost:5080`.
+
+To distribute it, copy the whole publish folder (including `run.bat` and `wwwroot/`) — it's a folder-based deployment, not a single portable file.
 
 ---
 
@@ -218,7 +241,7 @@ The output lands in `bin/Release/net8.0/win-x64/publish/` as a single `Experimen
 ```
 ExperimentLab/
 ├── Program.cs                      # entry point: EF, migrations, services, static files, Swagger
-├── ExperimentLab.csproj            # publish settings: self-contained single-file exe
+├── ExperimentLab.csproj            # publish settings: self-contained build
 ├── appsettings.json                # production config — Demo seeding OFF
 ├── appsettings.Development.json    # local dev config — Demo seeding ON
 ├── Migrations/                     # EF Core schema history (generated, do not hand-edit)
@@ -252,7 +275,7 @@ ExperimentLab/
 
 | Layer | Choice |
 |---|---|
-| Runtime | .NET 8 / ASP.NET Core Web API, published self-contained single-file |
+| Runtime | .NET 8 / ASP.NET Core Web API, published as a self-contained build |
 | Persistence | Entity Framework Core + SQLite (single-file, zero-setup) + EF migrations |
 | Statistics | Two-proportion z-test, analytic confidence interval, normal-CDF approximation |
 | Frontend | Vanilla HTML / CSS / JavaScript — no framework, served from `wwwroot` |
@@ -271,10 +294,10 @@ ExperimentLab/
 - [x] Generalized variants (arbitrary names, designated control, N arms)
 - [x] EF Core migrations (no more wipe-and-rebuild)
 - [x] SQL-aggregated results (no full event table scan)
-- [x] Single-file self-contained exe
+- [x] Standalone build with one-click launcher
 - [ ] Multiple-comparisons correction for 3+ arm tests
 - [ ] Guardrail metrics (block a SHIP if a secondary metric regresses)
-- [ ] Cloud deployment alongside the exe
+- [ ] Cloud deployment alongside the standalone build
 
 ---
 
@@ -282,7 +305,8 @@ ExperimentLab/
 
 - **`dotnet: command not found`** — the SDK isn't on your PATH. Reinstall .NET 8 and reopen your terminal.
 - **`dotnet ef` not found** — install the tool: `dotnet tool install --global dotnet-ef`, then reopen your terminal.
-- **Port already in use** — change `5080` in `Properties/launchSettings.json`.
+- **Port already in use** — change `5080` in `Properties/launchSettings.json` (source) or in `run.bat`'s `--urls` value (published build).
+- **The published exe does nothing when double-clicked** — use `run.bat` instead; the bare exe with no arguments can exit silently on this platform.
 - **403 on `/simulate`** — demo seeding is disabled, correctly. Set `Demo:SeedingEnabled` to `true` in your config to allow it.
 - **400 on create: "Exactly one variant must be marked as the control"** — add `"isControl": true` to one (and only one) variant in the request body.
 - **Changed a model and need a new migration** — `dotnet ef migrations add YourChangeName` then `dotnet ef database update`. Never delete the `.db` file to "fix" a schema change anymore.
