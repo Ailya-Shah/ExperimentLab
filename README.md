@@ -25,7 +25,7 @@ ExperimentLab is the kind of internal tool a product team builds for itself: a s
 The data is **real because the platform generates it**, not because it was downloaded. A built-in traffic simulator drives thousands of users through the live assignment and event endpoints, so every number on the dashboard is the genuine output of the system's own pipeline.
 
 <p align="center">
-  <img src="assets/frontend.png" alt="ExperimentLab dashboard showing a SHIP verdict, control vs treatment conversion rates, and supporting statistics" width="720">
+  <img src="assets/FRONTEND.png" alt="ExperimentLab dashboard showing a SHIP verdict, control vs treatment conversion rates, and supporting statistics" width="720">
 </p>
 
 ---
