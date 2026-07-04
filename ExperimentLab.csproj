@@ -5,12 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <!-- Publish settings: bundle the .NET runtime into the output so the
-         person running the exe does NOT need .NET installed at all. -->
+    <!-- Publish settings: self-contained folder build. Bundles the .NET runtime
+         so the machine running it needs no .NET install, and keeps the exe,
+         run.bat, and wwwroot/ together as a folder (not a single bundled file). -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
