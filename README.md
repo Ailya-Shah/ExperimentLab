@@ -32,9 +32,9 @@ No .NET install needed — just run the pre-built app.
 
 That's it — `experimentlab.db` is created automatically on first launch.
 
-> Don't double-click `ExperimentLab.exe` directly — on this platform, launching the bare
-> exe with no arguments can exit silently with no error. `run.bat` passes a startup
-> argument that avoids this, so always use it instead.
+> **Use `run.bat`, not the bare `ExperimentLab.exe`.** `run.bat` is the supported
+> launch path — it starts the app and binds it to http://localhost:5080. The `.exe`
+> is included as a fallback, but the launcher is the intended way in.
 
 Want to build this yourself from source? See [Run from source](#run-from-source) below.
 
@@ -230,7 +230,11 @@ The output lands in `bin/Release/net8.0/win-x64/publish/`. Place a `run.bat` alo
 ExperimentLab.exe --urls=http://localhost:5080
 ```
 
-Use `run.bat` to launch it, not the exe directly — on this platform, launching the bare exe with zero arguments can exit silently with no error or log output; passing any argument avoids it. The app runs in `Production` by default in this build (Swagger is intentionally disabled there — it's a developer tool, not part of the shipped product), creates `experimentlab.db` on first launch, and serves the dashboard at `http://localhost:5080`.
+Launch it with `run.bat` (the supported entry point); the bare `ExperimentLab.exe`
+is kept alongside as a fallback. The app runs in `Production` by default in this
+build (Swagger is intentionally disabled there — it's a developer tool, not part of
+the shipped product), creates `experimentlab.db` on first launch, and serves the
+dashboard at http://localhost:5080.
 
 To distribute it, copy the whole publish folder (including `run.bat` and `wwwroot/`) — it's a folder-based deployment, not a single portable file.
 
@@ -306,7 +310,9 @@ ExperimentLab/
 - **`dotnet: command not found`** — the SDK isn't on your PATH. Reinstall .NET 8 and reopen your terminal.
 - **`dotnet ef` not found** — install the tool: `dotnet tool install --global dotnet-ef`, then reopen your terminal.
 - **Port already in use** — change `5080` in `Properties/launchSettings.json` (source) or in `run.bat`'s `--urls` value (published build).
-- **The published exe does nothing when double-clicked** — use `run.bat` instead; the bare exe with no arguments can exit silently on this platform.
+- **Prefer `run.bat` over the bare exe** — `run.bat` is the supported launcher and
+  passes the startup configuration the app expects. If the exe is run directly and
+  the window closes immediately, use `run.bat` instead.
 - **403 on `/simulate`** — demo seeding is disabled, correctly. Set `Demo:SeedingEnabled` to `true` in your config to allow it.
 - **400 on create: "Exactly one variant must be marked as the control"** — add `"isControl": true` to one (and only one) variant in the request body.
 - **Changed a model and need a new migration** — `dotnet ef migrations add YourChangeName` then `dotnet ef database update`. Never delete the `.db` file to "fix" a schema change anymore.
